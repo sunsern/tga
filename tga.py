@@ -1,10 +1,10 @@
 import numpy as np
 
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils.extmath import fast_dot, norm
 from sklearn.utils import as_float_array, check_array, check_random_state
 from sklearn.utils.validation import check_is_fitted
-
+from numpy import dot
+from scipy.linalg import norm
 
 def _trimmed_mean_1d(arr, k):
     """Calculate trimmed mean on a 1d array.
@@ -90,7 +90,7 @@ def _reorth(basis, target, rows=None, alpha=0.5):
 
     while norm_target < alpha * norm_target_old or n_reorth == 0:
         for row in basis:
-            t = fast_dot(row, target)
+            t = dot(row, target)
             target = target - t * row
 
         norm_target_old = norm_target
@@ -191,7 +191,7 @@ class TGA(BaseEstimator, TransformerMixin):
         self._fit(X)
         if self.copy and self.center_ is not None:
             X = X - self.center_
-        return fast_dot(X, self.components_.T)
+        return dot(X, self.components_.T)
 
     def _fit(self, X):
         """Fit the model on X
@@ -236,14 +236,14 @@ class TGA(BaseEstimator, TransformerMixin):
 
             # initialize using a few EM iterations
             for i in range(3):
-                dots = fast_dot(X, mu)
-                mu = fast_dot(dots.T, X)
+                dots = dot(X, mu)
+                mu = dot(dots.T, X)
                 mu = mu / norm(mu)
 
             # grassmann average
             for i in range(n_samples):
                 prev_mu = mu
-                dot_signs = np.sign(fast_dot(X, mu))
+                dot_signs = np.sign(dot(X, mu))
                 mu = _trimmed_mean(X * dot_signs[:, np.newaxis],
                                    self.trim_proportion)
                 mu = mu / norm(mu)
@@ -259,7 +259,7 @@ class TGA(BaseEstimator, TransformerMixin):
             self.components_[k] = mu
 
             if k < n_components - 1:
-                X = X - fast_dot(fast_dot(X, mu)[:, np.newaxis],
+                X = X - dot(dot(X, mu)[:, np.newaxis],
                                  mu[np.newaxis, :])
 
     def transform(self, X, y=None):
@@ -283,7 +283,7 @@ class TGA(BaseEstimator, TransformerMixin):
         X = check_array(X)
         if self.center_ is not None:
             X = X - self.center_
-        X_transformed = fast_dot(X, self.components_.T)
+        X_transformed = dot(X, self.components_.T)
         return X_transformed
 
     def inverse_transform(self, X):
@@ -302,7 +302,7 @@ class TGA(BaseEstimator, TransformerMixin):
         """
         check_is_fitted(self, 'center_')
 
-        X_original = fast_dot(X, self.components_)
+        X_original = dot(X, self.components_)
         if self.center_ is not None:
             X_original = X_original + self.center_
         return X_original
